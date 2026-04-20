@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Enter field details{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="font-semibold text-gray-900">{{ title }}</h2>
+        </div>
+        <div class="p-5">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Field name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ form.name.value|default:'' }}" required class="form-input">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Crop type <span class="text-red-500">*</span></label>
+                    <select name="crop_type" class="form-input">
+                        {% for value, label in form.crop_type.field.choices %}
+                        <option value="{{ value }}" {% if form.crop_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Planting date <span class="text-red-500">*</span></label>
+                    <input type="date" name="planting_date" value="{{ form.planting_date.value|date:'Y-m-d'|default:'' }}" required class="form-input">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Current stage</label>
+                    <select name="current_stage" class="form-input">
+                        {% for value, label in form.current_stage.field.choices %}
+                        <option value="{{ value }}" {% if form.current_stage.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assigned agent</label>
+                    <select name="assigned_agent" class="form-input">
+                        <option value="">Unassigned</option>
+                        {% for agent in form.assigned_agent.field.queryset %}
+                        <option value="{{ agent.id }}" {% if form.assigned_agent.value == agent.id %}selected{% endif %}>{{ agent.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Field Image</label>
+                    {% if form.instance.image and form.instance.image.url %}
+                    <div class="mb-2">
+                        <img src="{{ form.instance.image.url }}" alt="Current field image" style="max-width: 200px; max-height: 150px; border-radius: 0.375rem; object-fit: cover;">
+                        <p class="text-xs text-gray-500 mt-1">Current image (Cloudinary)</p>
+                    </div>
+                    {% endif %}
+                    <input type="file" name="image" accept="image/*" class="form-input">
+                    <p class="text-xs text-gray-500 mt-1">Upload a photo of the field (JPEG, PNG, GIF) - stored on Cloudinary</p>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="btn-primary flex-1 text-center">Save field</button>
+                    <a href="{% url 'fields:field_list' %}" class="btn-secondary flex-1 text-center">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

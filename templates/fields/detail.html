@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}{{ field.name }}{% endblock %}
+{% block page_subtitle %}Field details and activity{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'fields:field_list' %}" class="text-primary hover:text-primary-dark text-sm">← Back to fields</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Information Card -->
+    <div class="lg:col-span-2">
+        <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+            <!-- Field Image Banner from Cloudinary -->
+            {% if field.image and field.image.url %}
+            <div class="h-48 overflow-hidden bg-gray-100">
+                <img src="{{ field.image.url }}" alt="{{ field.name }}" class="w-full h-full object-cover">
+            </div>
+            {% else %}
+            <div class="h-48 bg-gray-100 flex items-center justify-center text-gray-400">
+                No image uploaded
+            </div>
+            {% endif %}
+            
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">{{ field.name }}</h2>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Created by {{ field.created_by.username }} on {{ field.created_at|date:"M d, Y" }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="badge badge-{% if field.status == 'active' %}active{% elif field.status == 'at_risk' %}risk{% else %}completed{% endif %} text-sm">
+                            {{ field.status|title }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase tracking-wide">Crop Type</div>
+                        <div class="font-medium mt-1">{{ field.get_crop_type_display }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase tracking-wide">Planting Date</div>
+                        <div class="font-medium mt-1">{{ field.planting_date }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase tracking-wide">Current Stage</div>
+                        <div class="mt-1">
+                            <span class="badge badge-{{ field.current_stage }}">{{ field.get_current_stage_display }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase tracking-wide">Assigned Agent</div>
+                        <div class="font-medium mt-1 flex items-center gap-2">
+                            {% if field.assigned_agent %}
+                                {{ field.assigned_agent.username }}
+                                {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                                <a href="{% url 'fields:unassign_agent' field.id %}" 
+                                   class="text-red-600 text-xs hover:underline"
+                                   onclick="return confirm('Unassign {{ field.assigned_agent.username }} from this field?')">
+                                    Remove
+                                </a>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-yellow-600">Unassigned</span>
+                                {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                                <button onclick="openAssignModal()" class="text-primary text-xs hover:underline">
+                                    Assign agent
+                                </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase tracking-wide">Last Updated</div>
+                        <div class="font-medium mt-1">{{ field.updated_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                </div>
+                
+                {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                <div class="mt-5 pt-4 border-t border-gray-200 flex gap-2">
+                    <a href="{% url 'fields:field_edit' field.id %}" class="btn-secondary text-sm">Edit field</a>
+                    <a href="{% url 'fields:field_delete' field.id %}" class="btn-danger text-sm">Delete field</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Update Card (only for agents) -->
+    {% if form %}
+    <div>
+        <div class="bg-white border border-gray-200 rounded-md overflow-hidden sticky top-4">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-900">Add field update</h2>
+            </div>
+            <div class="p-5">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                        {{ form.stage }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Observations</label>
+                        {{ form.notes }}
+                    </div>
+                    <button type="submit" class="btn-primary w-full text-center">Submit update</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Update History -->
+    <div class="lg:col-span-3">
+        <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-900">Update history</h2>
+            </div>
+            <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {% for update in updates %}
+                <div class="p-4 hover:bg-gray-50">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                        <div>
+                            <span class="font-medium text-gray-900">{{ update.get_stage_display }}</span>
+                            <span class="text-gray-500 text-sm ml-2">by {{ update.agent.username }}</span>
+                        </div>
+                        <span class="text-gray-400 text-xs">{{ update.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% if update.notes %}
+                    <p class="text-gray-600 text-sm mt-2">{{ update.notes }}</p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-gray-500">
+                    No updates yet. Be the first to update this field!
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Agent Modal (for admins) -->
+<div id="assignModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-md shadow-lg max-w-md w-full">
+        <div class="px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-semibold text-gray-900">Assign agent to {{ field.name }}</h3>
+            <button onclick="closeAssignModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+        </div>
+        <form method="post" action="{% url 'fields:assign_agent' %}" class="p-5">
+            {% csrf_token %}
+            <input type="hidden" name="field_id" value="{{ field.id }}">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select agent</label>
+                <select name="agent_id" required class="form-input">
+                    <option value="">-- Select an agent --</option>
+                    {% for agent in available_agents %}
+                    <option value="{{ agent.id }}">{{ agent.username }} ({{ agent.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary w-full text-center">Assign agent</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAssignModal() {
+        document.getElementById('assignModal').classList.remove('hidden');
+        document.getElementById('assignModal').classList.add('flex');
+    }
+    
+    function closeAssignModal() {
+        document.getElementById('assignModal').classList.add('hidden');
+        document.getElementById('assignModal').classList.remove('flex');
+    }
+</script>
+{% endblock %}

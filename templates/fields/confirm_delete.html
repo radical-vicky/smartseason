@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Delete field{% endblock %}
+{% block page_subtitle %}Confirm deletion{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="font-semibold text-gray-900">Delete field</h2>
+        </div>
+        <div class="p-5 text-center">
+            <p class="text-gray-700 mb-2">Are you sure you want to delete <span class="font-bold">"{{ field.name }}"</span>?</p>
+            <p class="text-gray-500 text-sm mb-5">This action cannot be undone.</p>
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex gap-2"><button type="submit" class="btn-danger flex-1 text-center">Yes, delete</button><a href="{% url 'fields:field_detail' field.id %}" class="btn-secondary flex-1 text-center">Cancel</a></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

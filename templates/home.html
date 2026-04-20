@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block auth_content %}
+<!-- Hero Section -->
+<div class="hero-section" style="background-image: url('{% static "images/hero-fields.jpg" %}');">
+    <div class="hero-overlay"></div>
+    <div class="hero-content max-w-4xl mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Smart field monitoring for modern agriculture</h1>
+        <p class="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">Track crop progress, manage field agents, and monitor every stage of your growing season from planting to harvest.</p>
+        <div class="flex flex-wrap gap-4 justify-center">
+            <a href="{% url 'account_signup' %}" class="bg-white text-green-800 px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition">Start free trial</a>
+            <a href="#features" class="border border-white text-white px-6 py-3 rounded-md font-medium hover:bg-white/10 transition">Learn more</a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="bg-gray-50 border-y border-gray-200 py-12">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+                <div class="text-3xl font-bold text-green-700">{{ total_fields }}</div>
+                <div class="text-sm text-gray-600 mt-1">Total Fields</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-green-700">{{ total_agents }}</div>
+                <div class="text-sm text-gray-600 mt-1">Field Agents</div>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-green-700">{{ active_fields }}</div>
+                <div class="text-sm text-gray-600 mt-1">Active Fields</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div id="features" class="max-w-6xl mx-auto px-4 py-16">
+    <h2 class="text-2xl font-bold text-center text-gray-900 mb-3">Everything you need</h2>
+    <p class="text-center text-gray-500 mb-10">Powerful tools to manage your agricultural operations</p>
+    
+    <div class="grid md:grid-cols-3 gap-6">
+        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+            <div class="text-xl font-semibold text-gray-900 mb-2">Field registry</div>
+            <p class="text-gray-600 text-sm">Catalog all fields with crop type, planting date, and assigned agents in one central place.</p>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+            <div class="text-xl font-semibold text-gray-900 mb-2">Stage tracking</div>
+            <p class="text-gray-600 text-sm">Move fields through Planted, Growing, Ready, and Harvested stages with complete history.</p>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+            <div class="text-xl font-semibold text-gray-900 mb-2">Role-based access</div>
+            <p class="text-gray-600 text-sm">Coordinators see everything; field agents focus only on their assigned fields.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Fields Section with Cloudinary Images -->
+{% if recent_fields %}
+<div class="bg-gray-50 py-12">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-2xl font-bold text-center text-gray-900 mb-8">Recently added fields</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+            {% for field in recent_fields %}
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition">
+                {% if field.image and field.image.url %}
+                <div class="h-48 overflow-hidden">
+                    <img src="{{ field.image.url }}" alt="{{ field.name }}" class="w-full h-full object-cover">
+                </div>
+                {% else %}
+                <div class="h-48 bg-gray-100 flex items-center justify-center text-gray-400">
+                    No image
+                </div>
+                {% endif %}
+                <div class="p-4">
+                    <div class="font-semibold text-gray-900">{{ field.name }}</div>
+                    <div class="text-sm text-gray-500 mt-1">{{ field.get_crop_type_display }}</div>
+                    <div class="mt-2">
+                        <span class="badge badge-{{ field.current_stage }}">{{ field.get_current_stage_display }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- CTA Section -->
+<div class="bg-green-800 text-white py-16">
+    <div class="max-w-3xl mx-auto text-center px-4">
+        <h2 class="text-2xl font-bold mb-3">Ready to transform your field monitoring?</h2>
+        <p class="text-green-100 mb-6">Join thousands of farmers and coordinators using SmartSeason</p>
+        <a href="{% url 'account_signup' %}" class="inline-block bg-white text-green-800 px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition">Get started now</a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="border-t border-gray-200 py-8 text-center text-sm text-gray-500">
+    <div class="max-w-6xl mx-auto px-4">
+        <p>&copy; 2026 SmartSeason. All rights reserved.</p>
+    </div>
+</footer>
+
+<style>
+    .hero-section {
+        position: relative;
+        background-size: cover;
+        background-position: center 30%;
+        background-repeat: no-repeat;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+    }
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%);
+    }
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 2rem;
+    }
+    .badge-planted { background-color: #eaeef2; color: #57606a; }
+    .badge-growing { background-color: #dafbe1; color: #1a7f37; }
+    .badge-ready { background-color: #fff8c5; color: #9a6700; }
+    .badge-harvested { background-color: #eaeef2; color: #57606a; }
+</style>
+{% endblock %}

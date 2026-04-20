@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of all fields across your operation{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <a href="{% url 'fields:field_list' %}" class="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition cursor-pointer block">
+        <div class="text-gray-500 text-sm">Total Fields</div>
+        <div class="text-2xl font-bold text-gray-900">{{ total_fields }}</div>
+        <div class="text-xs text-gray-400 mt-1">View all fields →</div>
+    </a>
+    
+    <a href="{% url 'fields:field_list' %}?status=active" class="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition cursor-pointer block">
+        <div class="text-gray-500 text-sm">Active</div>
+        <div class="text-2xl font-bold text-green-700">{{ status_counts.active }}</div>
+        <div class="text-xs text-green-600 mt-1">Active fields →</div>
+    </a>
+    
+    <a href="{% url 'fields:field_list' %}?status=at_risk" class="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition cursor-pointer block">
+        <div class="text-gray-500 text-sm">At Risk</div>
+        <div class="text-2xl font-bold text-red-700">{{ status_counts.at_risk }}</div>
+        <div class="text-xs text-red-600 mt-1">Needs attention →</div>
+    </a>
+    
+    <a href="{% url 'fields:field_list' %}?status=completed" class="bg-white border border-gray-200 rounded-md p-4 hover:shadow-md transition cursor-pointer block">
+        <div class="text-gray-500 text-sm">Completed</div>
+        <div class="text-2xl font-bold text-gray-600">{{ status_counts.completed }}</div>
+        <div class="text-xs text-gray-500 mt-1">Harvested fields →</div>
+    </a>
+</div>
+
+<!-- Unassigned Fields Alert -->
+{% if unassigned_count > 0 %}
+<div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-md p-4 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+            <span class="font-medium text-yellow-800">{{ unassigned_count }}</span>
+            <span class="text-yellow-700">field{{ unassigned_count|pluralize }} need agent assignment</span>
+        </div>
+        <a href="{% url 'fields:field_list' %}?assigned=false" class="text-yellow-800 text-sm hover:underline">View unassigned →</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- At Risk Fields Alert -->
+{% if at_risk_fields %}
+<div class="bg-red-50 border-l-4 border-red-500 rounded-md p-4 mb-6">
+    <div class="font-medium text-red-800 mb-2">Fields needing attention</div>
+    <ul class="space-y-1">
+        {% for field in at_risk_fields %}
+        <li>
+            <a href="{% url 'fields:field_detail' field.id %}" class="text-red-700 text-sm hover:underline">
+                {{ field.name }} - {{ field.get_current_stage_display }} stage
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- All Field Agents Section -->
+<div class="bg-white border border-gray-200 rounded-md overflow-hidden mb-6">
+    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+        <h2 class="font-semibold text-gray-900">Field Agents</h2>
+        <div class="text-xs text-gray-500">{{ available_agents|length }} total agents</div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2">Agent</th>
+                    <th class="px-4 py-2 hidden sm:table-cell">Email</th>
+                    <th class="px-4 py-2">Assigned Fields</th>
+                    <th class="px-4 py-2">Status</th>
+                    <th class="px-4 py-2">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agent in available_agents %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-2 font-medium">{{ agent.username }}</td>
+                    <td class="px-4 py-2 hidden sm:table-cell text-gray-500">{{ agent.email }}</td>
+                    <td class="px-4 py-2">
+                        {% if agent.assigned_fields_count > 0 %}
+                            <span class="badge badge-active">{{ agent.assigned_fields_count }} field{{ agent.assigned_fields_count|pluralize }}</span>
+                        {% else %}
+                            <span class="badge">0 fields</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2">
+                        {% if agent.assigned_fields_count == 0 %}
+                            <span class="badge badge-active">Available</span>
+                        {% else %}
+                            <span class="badge badge-warning">Assigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2">
+                        <button onclick="openAssignModal('{{ agent.id }}', '{{ agent.username }}')" 
+                                class="text-primary text-sm hover:underline">
+                            Assign field
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-gray-500 py-6">
+                        No field agents found. 
+                        <a href="/admin/auth/user/add/" class="text-primary hover:underline">Create an agent</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Fields -->
+<div class="bg-white border border-gray-200 rounded-md overflow-hidden mb-6">
+    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+        <h2 class="font-semibold text-gray-900">Recent fields</h2>
+        <a href="{% url 'fields:field_list' %}" class="text-primary text-sm hover:underline">View all fields →</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2">Image</th>
+                    <th class="px-4 py-2">Name</th>
+                    <th class="px-4 py-2">Crop</th>
+                    <th class="px-4 py-2 hidden sm:table-cell">Stage</th>
+                    <th class="px-4 py-2">Status</th>
+                    <th class="px-4 py-2 hidden lg:table-cell">Agent</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field in fields %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" 
+                    onclick="window.location.href='{% url 'fields:field_detail' field.id %}'">
+                    <td class="px-4 py-2">
+                        {% if field.image and field.image.url %}
+                        <img src="{{ field.image.url }}" alt="{{ field.name }}" class="w-8 h-8 rounded object-cover">
+                        {% else %}
+                        <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2 font-medium">{{ field.name }}</td>
+                    <td class="px-4 py-2 text-gray-600">{{ field.get_crop_type_display }}</td>
+                    <td class="px-4 py-2 hidden sm:table-cell">
+                        <span class="badge badge-{{ field.current_stage }}">{{ field.get_current_stage_display }}</span>
+                    </td>
+                    <td class="px-4 py-2">
+                        <span class="badge badge-{% if field.calculate_status == 'active' %}active{% elif field.calculate_status == 'at_risk' %}risk{% else %}completed{% endif %}">
+                            {{ field.calculate_status|title }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2 hidden lg:table-cell text-gray-500">
+                        {{ field.assigned_agent.username|default:"Unassigned" }}
+                    </td>
+                    <td class="px-4 py-2">
+                        <a href="{% url 'fields:field_detail' field.id %}" class="text-primary text-sm hover:underline">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-gray-500 py-6">
+                        No fields found.
+                        {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                        <a href="{% url 'fields:field_create' %}" class="text-primary hover:underline ml-1">Create your first field</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Activity with Cloudinary Images -->
+<div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+    <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+        <h2 class="font-semibold text-gray-900">Recent activity</h2>
+    </div>
+    <div class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+        {% for update in recent_updates %}
+        <div class="p-4 hover:bg-gray-50">
+            <div class="flex gap-3">
+                <!-- Field Image from Cloudinary -->
+                <div class="flex-shrink-0">
+                    {% if update.field.image and update.field.image.url %}
+                    <img src="{{ update.field.image.url }}" alt="{{ update.field.name }}" class="w-12 h-12 rounded object-cover">
+                    {% else %}
+                    <div class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Activity Details -->
+                <div class="flex-1">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                        <div>
+                            <a href="{% url 'fields:field_detail' update.field.id %}" class="font-medium text-gray-900 hover:text-primary">
+                                {{ update.field.name }}
+                            </a>
+                            <span class="text-gray-600 text-sm">→ {{ update.get_stage_display }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-gray-400">
+                            <span>by {{ update.agent.username }}</span>
+                            <span>{{ update.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                    </div>
+                    {% if update.notes %}
+                    <p class="text-gray-600 text-sm mt-2">{{ update.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-6 text-center text-gray-500">
+            No updates yet
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Assign Modal -->
+<div id="assignModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-md shadow-lg max-w-md w-full">
+        <div class="px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-semibold text-gray-900">Assign field to <span id="agentName"></span></h3>
+            <button onclick="closeAssignModal()" class="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+        </div>
+        <form method="post" action="{% url 'fields:assign_agent' %}" class="p-5">
+            {% csrf_token %}
+            <input type="hidden" name="agent_id" id="agentId">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select field</label>
+                <select name="field_id" required class="form-input">
+                    <option value="">-- Select a field --</option>
+                    {% for field in fields %}
+                        {% if not field.assigned_agent %}
+                        <option value="{{ field.id }}">{{ field.name }} ({{ field.get_crop_type_display }})</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary w-full text-center">Assign field</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAssignModal(agentId, agentName) {
+        document.getElementById('agentId').value = agentId;
+        document.getElementById('agentName').textContent = agentName;
+        document.getElementById('assignModal').classList.remove('hidden');
+        document.getElementById('assignModal').classList.add('flex');
+    }
+    
+    function closeAssignModal() {
+        document.getElementById('assignModal').classList.add('hidden');
+        document.getElementById('assignModal').classList.remove('flex');
+    }
+</script>
+{% endblock %}

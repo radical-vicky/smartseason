@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block auth_content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+            <div class="font-bold text-2xl text-green-800">SmartSeason</div>
+            <div class="text-gray-500 text-sm mt-1">Field Monitoring System</div>
+        </div>
+        
+        <div class="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
+            <div class="px-6 py-4 bg-green-600">
+                <h2 class="text-lg font-semibold text-white">Confirm email</h2>
+            </div>
+            
+            <div class="p-6 text-center">
+                {% if confirmation %}
+                    <p class="text-gray-700 mb-4">
+                        Please confirm that <strong>{{ confirmation.email_address.email }}</strong> is your email address.
+                    </p>
+                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">
+                            Confirm
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-gray-700 mb-4">
+                        This email confirmation link is invalid or has expired.
+                    </p>
+                    <a href="{% url 'account_login' %}" class="inline-block bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">
+                        Back to sign in
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Fields{% endblock %}
+{% block page_subtitle %}Manage all agricultural fields{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row justify-between gap-3 mb-5">
+    <div class="relative">
+        <input type="text" id="searchInput" placeholder="Search fields..." class="form-input w-full sm:w-80 pl-8">
+        <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</div>
+    </div>
+    {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+    <a href="{% url 'fields:field_create' %}" class="btn-primary text-center">+ New field</a>
+    {% endif %}
+</div>
+
+<div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="px-4 py-3">Image</th>
+                    <th class="px-4 py-3">Name</th>
+                    <th class="px-4 py-3">Crop</th>
+                    <th class="px-4 py-3 hidden sm:table-cell">Planted</th>
+                    <th class="px-4 py-3">Stage</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3 hidden md:table-cell">Agent</th>
+                    <th class="px-4 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field in fields %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        {% if field.image and field.image.url %}
+                        <img src="{{ field.image.url }}" alt="{{ field.name }}" class="w-10 h-10 rounded-md object-cover">
+                        {% else %}
+                        <div class="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 text-xs">No img</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 font-medium">{{ field.name }}</td>
+                    <td class="px-4 py-3">{{ field.get_crop_type_display }}</td>
+                    <td class="px-4 py-3 hidden sm:table-cell text-gray-500">{{ field.planting_date }}</td>
+                    <td class="px-4 py-3">
+                        <span class="badge badge-{{ field.current_stage }}">{{ field.get_current_stage_display }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="badge badge-{% if field.status == 'active' %}active{% elif field.status == 'at_risk' %}risk{% else %}completed{% endif %}">
+                            {{ field.status|title }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 hidden md:table-cell text-gray-500">
+                        {{ field.assigned_agent.username|default:"Unassigned" }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <a href="{% url 'fields:field_detail' field.id %}" class="text-primary hover:text-primary-dark text-sm mr-2">View</a>
+                        {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                        <a href="{% url 'fields:field_edit' field.id %}" class="text-gray-600 hover:text-gray-800 text-sm mr-2">Edit</a>
+                        <a href="{% url 'fields:field_delete' field.id %}" class="text-red-600 hover:text-red-800 text-sm">Delete</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-gray-500 py-8">
+                        No fields found.
+                        {% if user.is_superuser or user.groups.all.0.name == 'Admin' %}
+                        <a href="{% url 'fields:field_create' %}" class="text-primary hover:underline ml-1">Create your first field</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        let searchText = this.value.toLowerCase();
+        let rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            let text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
